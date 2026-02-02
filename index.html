@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Infinite Car 3D</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { margin: 0; overflow: hidden; background: #000; }
+    #ui {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-family: Arial, sans-serif;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+<div id="ui">🏎️ Infinite Car 3D</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+<script>
+let scene, camera, renderer;
+let car, speed = 0.15;
+let trackSegments = [];
+let segmentLength = 20;
+let currentZ = 0;
+
+init();
+animate();
+
+function init() {
+  scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x87ceeb, 10, 120);
+
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 500);
+  camera.position.set(0, 5, -8);
+  camera.lookAt(0, 0, 10);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  document.body.appendChild(renderer.domElement);
+
+  // Luz
+  const light = new THREE.DirectionalLight(0xffffff, 1);
+  light.position.set(5, 10, 5);
+  scene.add(light);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+  // Carro
+  const carGeo = new THREE.BoxGeometry(1, 0.5, 2);
+  const carMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+  car = new THREE.Mesh(carGeo, carMat);
+  car.position.y = 0.25;
+  scene.add(car);
+
+  // Pista inicial
+  for (let i = 0; i < 10; i++) {
+    createTrackSegment(i * segmentLength);
+  }
+
+  // Controles
+  window.addEventListener("keydown", onKey);
+  window.addEventListener("resize", onResize);
+  window.addEventListener("touchstart", onTouch);
+}
+
+function createTrackSegment(z) {
+  const geo = new THREE.PlaneGeometry(6, segmentLength);
+  const mat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+  const segment = new THREE.Mesh(geo, mat);
+  segment.rotation.x = -Math.PI / 2;
+  segment.position.z = z;
+  scene.add(segment);
+  trackSegments.push(segment);
+}
+
+function updateTrack() {
+  if (car.position.z + 50 > currentZ) {
+    currentZ += segmentLength;
+    createTrackSegment(currentZ);
+  }
+}
+
+function onKey(e) {
+  if (e.key === "ArrowLeft") car.position.x -= 0.3;
+  if (e.key === "ArrowRight") car.position.x += 0.3;
+  if (e.key === "ArrowUp") speed = 0.3;
+}
+
+function onTouch(e) {
+  const x = e.touches[0].clientX;
+  if (x < window.innerWidth / 2) {
+    car.position.x -= 0.4;
+  } else {
+    car.position.x += 0.4;
+  }
+  speed = 0.3;
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  car.position.z += speed;
+  camera.position.z = car.position.z - 8;
+  camera.lookAt(car.position.x, car.position.y, car.position.z + 10);
+
+  updateTrack();
+  renderer.render(scene, camera);
+}
+</script>
+</body>
+</html>
